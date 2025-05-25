@@ -1,5 +1,5 @@
 node {
-    // Usamos imagen oficial de Gradle basada en Debian
+    // Imagen oficial de Gradle basada en Debian (no Alpine)
     def myGradleContainer = docker.image('gradle:8.5-jdk8')
     myGradleContainer.pull()
 
@@ -9,25 +9,29 @@ node {
 
     stage('Construcción') {
         myGradleContainer.inside {
-            // Usamos el wrapper del proyecto en vez de la instalación global
+            // Usamos el wrapper para evitar problemas con gradle global
             sh 'cd complete && ./gradlew build'
         }
     }
 
     stage('Sonar Scanner') {
-        def sonarqubeScannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-        withCredentials([string(credentialsId: 'b3be4a72-fe62-41a8-a585-f58425a63b90', variable: 'sonarLogin')]) {
-            sh """
-                ${sonarqubeScannerHome}/bin/sonar-scanner \
-                -Dsonar.host.url=http://sonarqube:9000 \
-                -Dsonar.login=${sonarLogin} \
-                -Dsonar.projectName=gs-gradle \
-                -Dsonar.projectVersion=${env.BUILD_NUMBER} \
-                -Dsonar.projectKey=GS \
-                -Dsonar.sources=complete/src/main \
-                -Dsonar.tests=complete/src/test \
-                -Dsonar.java.binaries=complete/build/classes
-            """
+        // Usamos token seguro de SonarQube
+        def sonarScanner = tool name: 'b3be4a72-fe62-41a8-a585-f58425a63b90', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+
+        withCredentials([string(credentialsId: 'sonar', variable: 'SONAR_TOKEN')]) {
+            withEnv(["SONAR_TOKEN=${SONAR_TOKEN}"]) {
+                sh """
+                    ${sonarScanner}/bin/sonar-scanner \\
+                      -Dsonar.host.url=http://sonarqube:9000 \\
+                      -Dsonar.login=$SONAR_TOKEN \\
+                      -Dsonar.projectKey=GS \\
+                      -Dsonar.projectName=gs-gradle \\
+                      -Dsonar.projectVersion=$BUILD_NUMBER \\
+                      -Dsonar.sources=complete/src/main \\
+                      -Dsonar.tests=complete/src/test \\
+                      -Dsonar.java.binaries=complete/build/classes
+                """
+            }
         }
     }
 }
