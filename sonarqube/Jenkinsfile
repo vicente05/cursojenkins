@@ -1,5 +1,6 @@
 node {
-    def myGradleContainer = docker.image('gradle:8.5-jdk8') // Usa Debian, no Alpine
+    // Usamos imagen oficial de Gradle basada en Debian
+    def myGradleContainer = docker.image('gradle:8.5-jdk8')
     myGradleContainer.pull()
 
     stage('Preparación') {
@@ -7,8 +8,9 @@ node {
     }
 
     stage('Construcción') {
-        myGradleContainer.inside("-v ${env.HOME}/.gradle:/home/gradle/.gradle") {
-            sh 'cd complete && gradle build'
+        myGradleContainer.inside {
+            // Usamos el wrapper del proyecto en vez de la instalación global
+            sh 'cd complete && ./gradlew build'
         }
     }
 
@@ -22,9 +24,8 @@ node {
                 -Dsonar.projectName=gs-gradle \
                 -Dsonar.projectVersion=${env.BUILD_NUMBER} \
                 -Dsonar.projectKey=GS \
-                -Dsonar.sources=complete/src/main/ \
-                -Dsonar.tests=complete/src/test/ \
-                -Dsonar.language=java \
+                -Dsonar.sources=complete/src/main \
+                -Dsonar.tests=complete/src/test \
                 -Dsonar.java.binaries=complete/build/classes
             """
         }
