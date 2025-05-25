@@ -31,6 +31,12 @@ node {
                     """
                 }
             }
+
+            slackSend (
+                color: '#36a64f',
+                message: "*✅ Pipeline exitoso:* `gs-gradle`\nJob: `${env.JOB_NAME}` #${env.BUILD_NUMBER}",
+                channel: '#alertas'
+            )
         }
 
     } catch (e) {
