@@ -14,22 +14,21 @@ node {
         }
 
         stage('Sonar Scanner') {
-            def sonarScanner = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            // Configuración de SonarQube
+            // Asegúrate de que el plugin de SonarQube esté instalado en Jenkins
 
             withCredentials([string(credentialsId: 'sonar', variable: 'SONAR_TOKEN')]) {
-                withEnv(["SONAR_TOKEN=${SONAR_TOKEN}"]) {
-                    sh """
-                        ${sonarScanner}/bin/sonar-scanner \\
-                          -Dsonar.host.url=http://sonarqube:9000 \\
-                          -Dsonar.login=$SONAR_TOKEN \\
-                          -Dsonar.projectKey=GS \\
-                          -Dsonar.projectName=gs-gradle \\
-                          -Dsonar.projectVersion=$BUILD_NUMBER \\
-                          -Dsonar.sources=complete/src/main \\
-                          -Dsonar.tests=complete/src/test \\
-                          -Dsonar.java.binaries=complete/build/classes
-                    """
-                }
+                sh '''
+                    sonar-scanner \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.login=$SONAR_TOKEN \
+                    -Dsonar.projectKey=GS \
+                    -Dsonar.projectName=gs-gradle \
+                    -Dsonar.projectVersion=$BUILD_NUMBER \
+                    -Dsonar.sources=complete/src/main \
+                    -Dsonar.tests=complete/src/test \
+                    -Dsonar.java.binaries=complete/build/classes
+                '''
             }
 
             slackSend (
